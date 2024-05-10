@@ -113,18 +113,24 @@ const getLiveloxMap = async (req, res, next) => {
         return res.status(400).send('could not reach livelox server')
     }
     const eventData = data.general
-    const blobUrl = eventData?.classBlobUrl
-    if (!blobUrl) {
-        return res.status(400).send('cannot not figure blob url')
-    }
     let blobData = null
     try {
-        const res = await fetch(blobUrl, {
+        const res = await fetch("https://www.livelox.com/Data/ClassBlob", {
             "headers": {
                 "accept": "application/json",
                 "content-type": "application/json",
                 "X-Requested-With": "XMLHttpRequest",
-            }
+            },
+            "body": JSON.stringify({
+                "classIds":[classId],
+                "courseIds":null,
+                "relayLegs":!!relayLeg ? [relayLeg] : [],
+                "relayLegGroupIds":[],
+                "includeMap":true,
+                "includeCourses":true,
+                "skipStoreInCache":false
+            }),
+            "method": "POST"
         });
         blobData = await res.json()
     } catch (e) {
