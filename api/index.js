@@ -71,7 +71,7 @@ const getGpsSeurantaMap = async (req, res, next) => {
     }
     var readStream = new stream.PassThrough()
     readStream.end(buffer)
-    res.set('Content-Disposition', "attachment; filename*=UTF-8''" + escape(filename))
+    res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
     res.set('Content-Type', mime)
     readStream.pipe(res)
 }
@@ -188,7 +188,7 @@ const getLiveloxMap = async (req, res, next) => {
         }
         var readStream = new stream.PassThrough()
         readStream.end(buffer)
-        res.set('Content-Disposition', "attachment; filename*=UTF-8''" + escape(filename))
+        res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
         res.set('Content-Type', mime)
         readStream.pipe(res)
     } catch (e) {
@@ -280,7 +280,7 @@ const getRGMap = async (req, res, next) => {
     const filename = `map.jpg`
     var readStream = new stream.PassThrough()
     readStream.end(buffer)
-    res.set('Content-disposition', "attachment; filename*=UTF-8''" + escape(filename))
+    res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
     res.set('Content-Type', mime)
     readStream.pipe(res)
   }
@@ -356,7 +356,7 @@ const getRGMap = async (req, res, next) => {
     readStream.end(out)
 
     res.set('Content-Type', mime + '; charset=utf-8')
-    res.set('Content-Disposition', "attachment; filename*=UTF-8''" + escape(filename))
+    res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
     readStream.pipe(res)
 }
 
