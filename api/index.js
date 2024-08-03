@@ -162,7 +162,7 @@ const getLiveloxMap = async (req, res, next) => {
         let mapScale = route[0].controls?.[0].mapScale || 15000;
         mapResolution = 15000 / mapScale;
         const mapImg = await loadImage(mapUrl)
-        const [outCanvas, bounds] = drawRoute(mapImg, mapBound, route, mapResolution * 15000 / blobData.courses[])
+        const [outCanvas, bounds] = drawRoute(mapImg, mapBound, route, mapResolution)
         const imgBlob = outCanvas.toBuffer('image/png')
         const outImgBlob = await sharp(imgBlob).webp().toBuffer()
         let buffer
