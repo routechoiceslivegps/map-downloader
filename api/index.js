@@ -20,11 +20,9 @@ const getGpsSeurantaMap = async (req, res, next) => {
     if (!eventUrl.endsWith('/')) {
         eventUrl += '/'
     }
-    /*
-    if (!eventUrl.startsWith('https://tulospalvelu.fi/')) { 
+    if (!eventUrl.startsWith('https://www.tulospalvelu.fi/gps/')) { 
         return res.status(400).send('invalid url domain')
     }
-    */
     let data = ""
     try {
         const res = await fetch(eventUrl + "init", {
