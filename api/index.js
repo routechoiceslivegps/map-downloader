@@ -32,8 +32,9 @@ const getGpsSeurantaMap = async (req, res, next) => {
     } catch (e) {
         return res.status(400).send('could not reach tulospalvelu server')
     }
-    const calString = [...data.matchAll(/^CALIBRATION:(.+)$/gm)][0][1];
-    const mapName = [...data.matchAll(/^RACENAME:(.+)$/gm)][0][1];
+    
+    const calString = [...data.matchAll(/^CALIBRATION:(.+)$/gm)]?.[0]?.[1];
+    const mapName = [...data.matchAll(/^RACENAME:(.+)$/gm)]?.[0]?.[1];
     if (!calString) {
         return res.status(400).send('Could not determine calibration' + calString)
     }
