@@ -70,7 +70,7 @@ const getGpsSeurantaMap = async (req, res, next) => {
     }
     var readStream = new stream.PassThrough()
     readStream.end(buffer)
-    res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
+    //res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
     res.set('Content-Type', mime)
     readStream.pipe(res)
 }
@@ -189,7 +189,7 @@ const getLiveloxMap = async (req, res, next) => {
         }
         var readStream = new stream.PassThrough()
         readStream.end(buffer)
-        res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
+        //res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
         res.set('Content-Type', mime)
         readStream.pipe(res)
     } catch (e) {

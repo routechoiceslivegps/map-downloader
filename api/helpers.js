@@ -2,10 +2,27 @@ const {createCanvas} = require('@napi-rs/canvas');
 const { LatLon, cornerCalTransform } = require('./utils');
 const JSZip = require('jszip');
 
+Number.prototype.mod = function (n) {
+  "use strict";
+  return ((this % n) + n) % n;
+};
 
 const drawRoute = (img, origBounds, routes, res) => {
-    const canvas =  createCanvas(Math.round(img.width/res), Math.round(img.height/res));
-    const bounds = origBounds.map(p=>new LatLon(p.latitude, p.longitude))
+    const bounds = origBounds.map((p) => new LatLon(p.latitude, p.longitude))
+    const transform = cornerCalTransform(
+        canvas.width,
+        canvas.height,
+        bounds[3],
+        bounds[2],
+        bounds[1],
+        bounds[0]
+    );
+      
+    const canvas =  createCanvas(
+        Math.round(img.width / res),
+        Math.round(img.height / res)
+    );
+    
     const ctx = canvas.getContext('2d');
   
     // draw a background
@@ -19,18 +36,9 @@ const drawRoute = (img, origBounds, routes, res) => {
     const canvas2 = createCanvas(canvas.width, canvas.height);
     const ctx2 = canvas2.getContext('2d');
 
-    const transform = cornerCalTransform(
-        canvas.width,
-        canvas.height,
-        bounds[3],
-        bounds[2],
-        bounds[1],
-        bounds[0]
-    );
-      
     ctx2.lineWidth = weight;
     const circleSize = 30
-    ctx2.strokeStyle = 'purple';
+    ctx2.strokeStyle = '#ff33cc';
     ctx2.beginPath();
     
     routes.forEach(route => {
@@ -45,32 +53,74 @@ const drawRoute = (img, origBounds, routes, res) => {
                 routePts[i].x -= 0.0001
             }
 
-            StartFromA = routePts[i].x < routePts[i+1].x
-            ptA = StartFromA ? routePts[i] : routePts[i+1]
-            ptB = StartFromA ? routePts[i+1] : routePts[i]
-            angle = Math.atan((ptB.y - ptA.y) / (ptB.x - ptA.x))
+            const pt = routePts[i];
+            const nextPt = routePts[i+1]
+            const angle = Math.atan2(nextPt.y - pt.y, nextPt.x - pt.x);
+
+            // Start Triangle
             if (i === 0) {
-                let ptS = ptB;
-                if (StartFromA) {
-                    ptS = ptA;
-                }
-                ctx2.moveTo(Math.round(ptS.x - (StartFromA ? -1: 1) * circleSize * Math.cos(angle)), Math.round(ptS.y  - (StartFromA ? -1: 1) * circleSize * Math.sin(angle)))
-                ctx2.lineTo(Math.round(ptS.x - (StartFromA ? -1: 1) * circleSize * Math.cos(angle + 2*Math.PI / 3)), Math.round(ptS.y  - (StartFromA ? -1: 1) * circleSize * Math.sin(angle + 2*Math.PI / 3)))
-                ctx2.lineTo(Math.round(ptS.x - (StartFromA ? -1: 1) * circleSize * Math.cos(angle - 2*Math.PI / 3)), Math.round(ptS.y  - (StartFromA ? -1: 1) * circleSize * Math.sin(angle - 2*Math.PI / 3)))
-                ctx2.lineTo(Math.round(ptS.x - (StartFromA ? -1: 1) * circleSize * Math.cos(angle)), Math.round(ptS.y  - (StartFromA ? -1: 1) * circleSize * Math.sin(angle)))
+                ctx2.moveTo(
+                    Math.round(pt.x + circleSize * Math.cos(angle)),
+                    Math.round(pt.y + circleSize * Math.sin(angle))
+                )
+                ctx2.lineTo(
+                    Math.round(pt.x + circleSize * Math.cos(angle + 2 / 3 * Math.PI)),
+                    Math.round(pt.y + circleSize * Math.sin(angle + 2 / 3 * Math.PI))
+                )
+                ctx2.lineTo(Math.round(pt.x + circleSize * Math.cos(angle - 2 / 3 * Math.PI)), Math.round(pt.y + circleSize * Math.sin(angle - 2 / 3 * Math.PI)))
+                ctx2.lineTo(Math.round(pt.x + circleSize * Math.cos(angle)), Math.round(pt.y + circleSize * Math.sin(angle)))
             }
-            ctx2.moveTo(Math.round(ptA.x + circleSize * Math.cos(angle)), Math.round(ptA.y + circleSize * Math.sin(angle)))
-            ctx2.lineTo(Math.round(ptB.x - circleSize * Math.cos(angle)), Math.round(ptB.y - circleSize * Math.sin(angle)))
-            let ptO = ptA
-            if (StartFromA) {
-                ptO = ptB
+            ctx2.moveTo(
+                Math.round(pt.x + circleSize * Math.cos(angle)),
+                Math.round(pt.y + circleSize * Math.sin(angle))
+            )
+            ctx2.lineTo(
+                Math.round(nextPt.x - circleSize * Math.cos(angle)),
+                Math.round(nextPt.y - circleSize * Math.sin(angle))
+            )
+            ctx2.moveTo(
+                Math.round(nextPt.x + circleSize),
+                Math.round(nextPt.y)
+            )
+            ctx2.arc(
+                nextPt.x,
+                nextPt.y,
+                circleSize,
+                0,
+                2 * Math.PI
+            )
+            if (i === route.length - 2) {
+                ctx2.moveTo(
+                    Math.round(nextPt.x + circleSize - 5),
+                    Math.round(nextPt.y)
+                )
+                ctx2.arc(
+                    nextPt.x,
+                    nextPt.y,
+                    circleSize - 10,
+                    0,
+                    2 * Math.PI
+                )    
             }
-            ctx2.moveTo(Math.round(ptO.x + circleSize), Math.round(ptO.y))
-            ctx2.arc(routePts[i+1].x, routePts[i+1].y, circleSize, 0, 2*Math.PI)
-            if (i === route.length-2) {
-                ctx2.moveTo(Math.round(ptO.x + circleSize-5), Math.round(ptO.y))
-                ctx2.arc(routePts[i+1].x, routePts[i+1].y, circleSize-10, 0, 2*Math.PI)    
-            }
+        }
+        for(let i=1; i < route.length-1; i++) {
+            const prevPt = routePts[i-1]
+            const pt = routePts[i]
+            const nextPt = routePts[i+1]
+
+            const prevAngle = Math.atan2(prevPt.y - pt.y, prevPt.x - pt.x);
+            const nextAngle = Math.atan2(nextPt.y - pt.y, nextPt.x - pt.x);
+            const angleDiff = ((nextAngle - prevAngle + Math.PI).mod(2 * Math.PI)) - Math.PI
+            const avgAngle = (prevAngle + angleDiff / 2).mod(2 * Math.PI)
+            const oppAngle = avgAngle + Math.PI;
+            ctx2.textAlign = "center"
+            ctx2.fillStyle = "#ff33cc"
+            ctx2.font = "bold " + (circleSize * 2) + "px Arial"
+            ctx2.fillText(
+                "" + i,
+                Math.round(pt.x + Math.cos(oppAngle) * (circleSize * 2)),
+                Math.round(pt.y + circleSize + Math.sin(oppAngle) * (circleSize * 2))
+            )
         }
     })
     ctx2.stroke();
@@ -132,7 +182,7 @@ const getKml = (name, corners_coords) => {
       
     ctx2.lineWidth = weight;
     const circleSize = 20
-    ctx2.strokeStyle = 'purple';
+    ctx2.strokeStyle = '#ff33cc';
     ctx2.beginPath();
     coordinatesArray.forEach(coordinates => {
       for(let i=0; i < coordinates.length-1; i++) {
@@ -145,6 +195,8 @@ const getKml = (name, corners_coords) => {
           var ptA = StartFromA ? coordinates[i] : coordinates[i+1]
           var ptB = StartFromA ? coordinates[i+1] : coordinates[i]
           var angle = Math.atan((-ptB[1] + ptA[1]) / (ptB[0] - ptA[0]))
+
+          // start triangle
           if (i === 0) {
               let ptS = ptB;
               if (StartFromA) {
@@ -170,6 +222,7 @@ const getKml = (name, corners_coords) => {
                   Math.round((StartFromA ? 1: -1) * circleSize * Math.sin(angle) - ptS[1])
               )
           }
+
           ctx2.moveTo(
               Math.round(ptA[0] + circleSize * Math.cos(angle)),
               Math.round(-ptA[1] + circleSize * Math.sin(angle))
@@ -196,6 +249,30 @@ const getKml = (name, corners_coords) => {
           }
       }
     })
+
+
+    for(let i=1; i < coordinates.length-1; i++) {
+        // avoid division by zero
+        if (coordinates[i][0] === coordinates[i+1][0]) {
+            coordinates[i][0] -= 0.0001
+        }
+
+        const prevPt = coordinates[i-1]
+        const pt = coordinates[i]
+        const nextPt = coordinates[i+1]
+
+        const angleA = Math.atan((prevPt[1] - pt[1]) / (pt[0] - prevPt[0]))
+        const angleB = Math.atan((pt[1] - nextPt[1]) / (nextPt[0] - pt[0]))
+        const angleNumber = (angleA + angleB) % Math.PI / 2 + Math.PI;
+        ctx2.moveTo(
+            Math.round(pt[0] + Math.cos(angleNumber) * (circleSize + 2)),
+            Math.round(pt[1] + Math.sin(angleNumber) * (circleSize + 2))
+        )
+        ctx2.lineTo(
+            Math.round(pt[0]), Math.round(pt[1])
+        )
+    }
+
     ctx2.stroke();
     ctx.globalAlpha = 0.7;
     ctx.drawImage(canvas2, 0, 0);
