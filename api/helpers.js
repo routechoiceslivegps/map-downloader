@@ -28,7 +28,7 @@ const drawRouteXY = (img, routes, res) => {
 
     ctx2.lineWidth = weight;
     const circleSize = 30
-    ctx2.strokeStyle = '#ff33cc';
+    ctx2.strokeStyle = '#f403fc';
     ctx2.beginPath();
     
     routes.forEach(routePts => {
@@ -99,7 +99,7 @@ const drawRouteXY = (img, routes, res) => {
             const avgAngle = (prevAngle + angleDiff / 2).mod(2 * Math.PI)
             const oppAngle = avgAngle + Math.PI;
             ctx2.textAlign = "center"
-            ctx2.fillStyle = "#ff33cc"
+            ctx2.fillStyle = '#f403fc'
             ctx2.font = "" + (circleSize * 1.6) + "px Arial"
             ctx2.fillText(
                 "" + i,
