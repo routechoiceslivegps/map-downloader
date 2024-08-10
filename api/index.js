@@ -4,14 +4,14 @@ const url = require('url')
 const fetch = require('node-fetch')
 const express = require('express')
 const stream = require('stream')
-const { drawRoute, saveKMZ, drawMapWithCourse, getProj4Def } = require('./helpers')
+const { drawRouteLatLng, saveKMZ, drawRouteXY, getProj4Def } = require('./helpers')
 const sharp = require('sharp');
 const fileUpload = require('express-fileupload');
 const { readOcad } = require('ocad2geojson')
 const OcadTiler = require('ocad-tiler')
 const proj4 = require('proj4')
 const { render } = require('./ocad_render')
-const { CornersLatLonsFromThreePointsCoordsCal } = require('./utils');
+const { CornersLatLonsFromThreePointsCoordsCal, Point, LatLon } = require('./utils');
 
 const app = express()
 
@@ -70,7 +70,7 @@ const getGpsSeurantaMap = async (req, res, next) => {
     }
     var readStream = new stream.PassThrough()
     readStream.end(buffer)
-    //res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
+    res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
     res.set('Content-Type', mime)
     readStream.pipe(res)
 }
@@ -161,7 +161,8 @@ const getLiveloxMap = async (req, res, next) => {
         let mapScale = route[0].controls?.[0].mapScale || 15000;
         mapResolution = 15000 / mapScale;
         const mapImg = await loadImage(mapUrl)
-        const [outCanvas, bounds] = drawRoute(mapImg, mapBound, route, mapResolution)
+        const bounds = mapBound.map((p) => new LatLon(p.latitude, p.longitude));
+        const outCanvas = drawRouteLatLng(mapImg, bounds, route, mapResolution)
         const imgBlob = outCanvas.toBuffer('image/png')
         const outImgBlob = await sharp(imgBlob).webp().toBuffer()
         let buffer
@@ -214,7 +215,7 @@ const getRGClasses = async (req, res, next) => {
       return [data[0], data.slice(1).join('|')]
     }).filter(Boolean)
     return res.status(200).send({classes, eventUrl: eventUrl})
-  }
+}
 
 const getRGMap = async (req, res, next) => {
     const eventUrl = req.body.url;
@@ -257,7 +258,14 @@ const getRGMap = async (req, res, next) => {
     if (!routesData.length) {
       return res.status(200).send({error: "Cannot find routes in routes file"})
     }
-    const coordinates = routesData.map(routeData => routeData.split('N').map((xy) => xy && xy.split(';').map((x) => parseInt(x, 10))).filter(Boolean))
+    const coordinates = routesData.map(
+        (routeData) => 
+          routeData
+            .split('N')
+            .map((xy) => xy && xy.split(';').map((x) => parseInt(x, 10)))
+            .filter(Boolean)
+            .map((p) => new Point(p[0], -p[1]))
+    );
     
     const mapListFileURL = parsedUrl.protocol + '//' + parsedUrl.host + '/' + gadgetRootPath + "/kisat.txt";
     const mapFileRequest = await fetch(mapListFileURL)
@@ -275,7 +283,7 @@ const getRGMap = async (req, res, next) => {
     
     const mapURL = parsedUrl.protocol + '//' + parsedUrl.host + '/' + gadgetRootPath + "/" + parseInt(mapId, 10) + ".jpg";
     const mapImg = await loadImage(mapURL)
-    const resultImg = drawMapWithCourse(mapImg, coordinates)
+    const resultImg = drawRouteXY(mapImg, coordinates, 1)
     const buffer = resultImg.toBuffer('image/jpeg')
     const mime = 'image/jpeg'
     const filename = `map.jpg`
