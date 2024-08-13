@@ -51,7 +51,7 @@ const getGpsSeurantaMap = async (req, res, next) => {
     if (!req.body.type || req.body.type === 'webp') {
         buffer = outImgBlob
         mime = 'image/webp'
-        filename = `${mapName}_${bounds[0].lat}_${bounds[0].lon}_${bounds[1].lat}_${bounds[1].lon}_${bounds[2].lat}_${bounds[2].lon}_${bounds[3].lat}_${bounds[3].lon}_.webp`
+        filename = `${mapName}_${bounds[0].lat.toFixed(5)}_${bounds[0].lon.toFixed(5)}_${bounds[1].lat.toFixed(5)}_${bounds[1].lon.toFixed(5)}_${bounds[2].lat.toFixed(5)}_${bounds[2].lon.toFixed(5)}_${bounds[3].lat.toFixed(5)}_${bounds[3].lon.toFixed(5)}_.webp`
     } else if(req.body.type === 'kmz') {
         buffer = await saveKMZ(
             mapName,
@@ -171,7 +171,7 @@ const getLiveloxMap = async (req, res, next) => {
         if (!req.body.type || req.body.type === 'webp') {
             buffer = outImgBlob
             mime = 'image/webp'
-            filename = `${mapName}_${bounds[3].lat}_${bounds[3].lon}_${bounds[2].lat}_${bounds[2].lon}_${bounds[1].lat}_${bounds[1].lon}_${bounds[0].lat}_${bounds[0].lon}_.webp`
+            filename = `${mapName}_${bounds[3].lat.toFixed(5)}_${bounds[3].lon.toFixed(5)}_${bounds[2].lat.toFixed(5)}_${bounds[2].lon.toFixed(5)}_${bounds[1].lat.toFixed(5)}_${bounds[1].lon.toFixed(5)}_${bounds[0].lat.toFixed(5)}_${bounds[0].lon.toFixed(5)}_.webp`
         } else if(req.body.type === 'kmz') {
             buffer = await saveKMZ(
                 mapName,
@@ -339,7 +339,7 @@ const getRGMap = async (req, res, next) => {
         out = imgBlob
         mime = 'image/webp'
         if (mapGeoRef) {
-            filename = uploadedFile.name.slice(0, -4) + "_" + northWest[1] + "_" + northWest[0] + "_" + northEast[1] + "_" + northEast[0] + "_" + southEast[1] + "_" + southEast[0] + "_" + southWest[1] + "_" + southWest[0] + "_" +".webp"
+            filename = uploadedFile.name.slice(0, -4) + "_" + northWest[1].toFixed(5) + "_" + northWest[0].toFixed(5) + "_" + northEast[1].toFixed(5) + "_" + northEast[0].toFixed(5) + "_" + southEast[1].toFixed(5) + "_" + southEast[0].toFixed(5) + "_" + southWest[1].toFixed(5) + "_" + southWest[0].toFixed(5) + "_" +".webp"
         } else {
             filename = uploadedFile.name.slice(0, -4) + ".webp"
         }
