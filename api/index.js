@@ -157,7 +157,7 @@ const getLiveloxMap = async (req, res, next) => {
         })
         route = blobData.courses.filter((course) => courseIds.includes(course.id)).map((c) => c.controls) 
     }
-    try {
+    //try {
         let mapScale = route[0].controls?.[0].mapScale || 15000;
         mapResolution = 15000 / mapScale;
 
@@ -173,10 +173,13 @@ const getLiveloxMap = async (req, res, next) => {
         if (relayLeg) {
             generatedMapUrl += `-${relayLeg}`;
         }
-        generatedMapUrl += "/map"
-        const mapImg = await loadImage(generatedMapUrl);
-        const outImgBlob = await sharp(mapImg).webp().toBuffer()
-
+        generatedMapUrl += "/map";
+        
+        const fimg = await fetch(generatedMapUrl)
+        const fimgb = await fimg.buffer()
+        
+        const outImgBlob = await sharp(fimgb).webp().toBuffer()
+        
         let buffer
         let mime
         let filename
@@ -205,9 +208,9 @@ const getLiveloxMap = async (req, res, next) => {
         res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
         res.set('Content-Type', mime)
         readStream.pipe(res)
-    } catch (e) {
-        return res.status(500).send('Something went wrong... '+e.message)
-    }
+    /*} catch (e) {
+        return res.status(500).send('Something went wrong... '+e)
+    }*/
 }
 
 const getRGClasses = async (req, res, next) => {
