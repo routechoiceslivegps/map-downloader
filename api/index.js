@@ -160,11 +160,23 @@ const getLiveloxMap = async (req, res, next) => {
     try {
         let mapScale = route[0].controls?.[0].mapScale || 15000;
         mapResolution = 15000 / mapScale;
-        const mapImg = await loadImage(mapUrl)
+
+        
         const bounds = mapBound.map((p) => new LatLon(p.latitude, p.longitude));
+        /*
+        const mapImg = await loadImage(mapUrl)
         const outCanvas = drawRouteLatLng(mapImg, bounds, route, mapResolution)
         const imgBlob = outCanvas.toBuffer('image/png')
         const outImgBlob = await sharp(imgBlob).webp().toBuffer()
+        */
+        let generatedMapUrl = `https://livelox.routechoices.com/${classId}`;
+        if (relayLeg) {
+            generatedMapUrl += `-${relayLeg}`;
+        }
+        generatedMapUrl += "/map"
+        const mapImg = await loadImage(generatedMapUrl);
+        const outImgBlob = await sharp(mapImg).webp().toBuffer()
+
         let buffer
         let mime
         let filename
