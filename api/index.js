@@ -174,8 +174,9 @@ const getLiveloxMap = async (req, res, next) => {
             generatedMapUrl += `-${relayLeg}`;
         }
         generatedMapUrl += "/map";
+        let fimg;
         try {
-            const fimg = await fetch(generatedMapUrl)
+            fimg = await fetch(generatedMapUrl)
         } catch (e) {
             return res.status(500).send('failed to get map')
         }
