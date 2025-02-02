@@ -174,16 +174,15 @@ const getLiveloxMap = async (req, res, next) => {
             generatedMapUrl += `-${relayLeg}`;
         }
         generatedMapUrl += "/map";
-        let fimg;
+        let outImgBlob;
         try {
-            fimg = await fetch(generatedMapUrl)
+            const fimg = await fetch(generatedMapUrl);
+            const fimgb = await fimg.buffer();
+            outImgBlob = await sharp(fimgb).webp().toBuffer();
         } catch (e) {
             return res.status(500).send('failed to get map')
         }
-        const fimgb = await fimg.buffer()
-        
-        const outImgBlob = await sharp(fimgb).webp().toBuffer()
-        
+     
         let buffer
         let mime
         let filename
