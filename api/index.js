@@ -158,7 +158,7 @@ const getLiveloxMap = async (req, res, next) => {
         route = blobData.courses.filter((course) => courseIds.includes(course.id)).map((c) => c.controls) 
     }
     //try {
-        let mapScale = route[0].controls?.[0].mapScale || 15000;
+        let mapScale = route[0]?.controls?.[0].mapScale || 15000;
         mapResolution = 15000 / mapScale;
 
         
