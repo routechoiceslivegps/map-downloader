@@ -174,8 +174,11 @@ const getLiveloxMap = async (req, res, next) => {
             generatedMapUrl += `-${relayLeg}`;
         }
         generatedMapUrl += "/map";
-        
-        const fimg = await fetch(generatedMapUrl)
+        try {
+            const fimg = await fetch(generatedMapUrl)
+        } catch (e) {
+            res.status(500).send('failed to get map')
+        }
         const fimgb = await fimg.buffer()
         
         const outImgBlob = await sharp(fimgb).webp().toBuffer()
@@ -309,7 +312,7 @@ const getRGMap = async (req, res, next) => {
     readStream.pipe(res)
   }
 
-  const getOcadMap = async (req, res, next) => {
+const getOcadMap = async (req, res, next) => {
     if(!req.files?.ocad_file) {
        return res.status(400).send('no file sent')
     }
@@ -373,7 +376,7 @@ const getRGMap = async (req, res, next) => {
         mime = 'application/vnd.google-earth.kmz'
         filename = `${mapName}.kmz`
     } else {
-        return res.status(400).send('invalid type' )
+        return res.status(400).send('invalid type')
     }
 
     const readStream = new stream.PassThrough()
