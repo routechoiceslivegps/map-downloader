@@ -90,10 +90,9 @@ const getLiveloxMap = async (req, res, next) => {
     }
     relayLeg = url.parse(liveloxUrl, true).query?.relayLeg
 
-    // TODO: Use cache url if available for faster download
-    let blobData = null
+    let data = {}
     try {
-        const res = await fetch("https://www.livelox.com/Data/ClassBlob", {
+        const res = await fetch("https://www.livelox.com/Data/ClassInfo", {
             "headers": {
                 "accept": "application/json",
                 "content-type": "application/json",
@@ -101,18 +100,57 @@ const getLiveloxMap = async (req, res, next) => {
             },
             "body": JSON.stringify({
                 "classIds":[classId],
-                "courseIds":null,
-                "relayLegs":!!relayLeg ? [relayLeg] : [],
-                "relayLegGroupIds":[],
-                "includeMap":true,
-                "includeCourses":true,
-                "skipStoreInCache":false
+                "courseIds": [],
+                "relayLegs": !!relayLeg ? [relayLeg] : [],
+                "relayLegGroupIds": [],
+                "includeMap": true,
+                "includeCourses": true,
+                "skipStoreInCache": false
             }),
             "method": "POST"
         });
-        blobData = await res.json()
+        data = await res.json()
     } catch (e) {
-        return res.status(400).send('could not reach blob url')
+        return res.status(400).send('could not reach livelox server')
+    }
+    let blobData = null
+    if (data.general.classBlobUrl) {
+        try {
+            const res = await fetch(data.general.classBlobUrl, {
+                "headers": {
+                    "accept": "application/json",
+                    "content-type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                "method": "GET"
+            });
+            blobData = await res.json()
+        } catch (e) {
+            return res.status(400).send('could not reach blob url')
+        }
+    } else {
+        try {
+            const res = await fetch("https://www.livelox.com/Data/ClassBlob", {
+                "headers": {
+                    "accept": "application/json",
+                    "content-type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                "body": JSON.stringify({
+                    "classIds":[classId],
+                    "courseIds":null,
+                    "relayLegs":!!relayLeg ? [relayLeg] : [],
+                    "relayLegGroupIds":[],
+                    "includeMap":true,
+                    "includeCourses":true,
+                    "skipStoreInCache":false
+                }),
+                "method": "POST"
+            });
+            blobData = await res.json()
+        } catch (e) {
+            return res.status(400).send('could not reach blob url')
+        }
     }
 
     let mapUrl, mapBound, mapName
