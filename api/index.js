@@ -90,6 +90,7 @@ const getLiveloxMap = async (req, res, next) => {
     }
     relayLeg = url.parse(liveloxUrl, true).query?.relayLeg
 
+    // TODO: Use cache url if available for faster download
     let blobData = null
     try {
         const res = await fetch("https://www.livelox.com/Data/ClassBlob", {
