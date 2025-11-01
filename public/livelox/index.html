@@ -15,6 +15,10 @@
             <form method="POST" action="/api/get-livelox-map">
                 <label for="url" class="form-label">Livelox URL:</label>
                 <input class="form-control" type="text" name="url" required/>
+                <div>
+                    <input type="checkbox" id="blank" name="blank" />
+                    <label for="scales">Hide course</label>
+                </div>
                 <button type="submit" class="btn btn-primary" style="margin-top:15px" name="type" value="webp">Download Image</button>&nbsp;
                 <button type="submit" class="btn btn-primary" style="margin-top:15px" name="type" value="kmz">Download KMZ</button>
             </form>

@@ -4,7 +4,7 @@ const url = require('url')
 const fetch = require('node-fetch')
 const express = require('express')
 const stream = require('stream')
-const { drawRouteLatLng, saveKMZ, drawRouteXY, getProj4Def } = require('./helpers')
+const { saveKMZ, drawRouteXY, getProj4Def } = require('./helpers')
 const sharp = require('sharp');
 const fileUpload = require('express-fileupload');
 const { readOcad } = require('ocad2geojson')
@@ -76,7 +76,8 @@ const getGpsSeurantaMap = async (req, res, next) => {
 }
 
 const getLiveloxMap = async (req, res, next) => {
-    const liveloxUrl = req.body.url
+    const liveloxUrl = req.body.url;
+    const blankMap = req.body.blank == 'on';
     if (!liveloxUrl.startsWith('https://www.livelox.com/')) { 
         return res.status(400).send('invalid url domain')
     }
@@ -157,24 +158,22 @@ const getLiveloxMap = async (req, res, next) => {
         })
         route = blobData.courses.filter((course) => courseIds.includes(course.id)).map((c) => c.controls) 
     }
-    //try {
-        let mapScale = route[0]?.controls?.[0].mapScale || 15000;
-        mapResolution = 15000 / mapScale;
+    let mapScale = route[0]?.controls?.[0].mapScale || 15000;
+    mapResolution = 15000 / mapScale;
 
-        
-        const bounds = mapBound.map((p) => new LatLon(p.latitude, p.longitude));
-        /*
-        const mapImg = await loadImage(mapUrl)
-        const outCanvas = drawRouteLatLng(mapImg, bounds, route, mapResolution)
-        const imgBlob = outCanvas.toBuffer('image/png')
-        const outImgBlob = await sharp(imgBlob).webp().toBuffer()
-        */
+    const bounds = mapBound.map((p) => new LatLon(p.latitude, p.longitude));
+
+    let outImgBlob;
+    if (blankMap) {
+        const image = await fetch(image.src);
+        const imageBuffer = await fimg.buffer();
+        outImgBlob = await sharp(imageBuffer).webp().toBuffer();
+    } else {
         let generatedMapUrl = `https://livelox.routechoices.com/${classId}`;
         if (relayLeg) {
             generatedMapUrl += `-${relayLeg}`;
         }
         generatedMapUrl += "/map";
-        let outImgBlob;
         try {
             const fimg = await fetch(generatedMapUrl);
             const fimgb = await fimg.buffer();
@@ -182,38 +181,36 @@ const getLiveloxMap = async (req, res, next) => {
         } catch (e) {
             return res.status(500).send('failed to get map')
         }
-     
-        let buffer
-        let mime
-        let filename
-        if (!req.body.type || req.body.type === 'webp') {
-            buffer = outImgBlob
-            mime = 'image/webp'
-            filename = `${mapName}_${bounds[3].lat.toFixed(5)}_${bounds[3].lon.toFixed(5)}_${bounds[2].lat.toFixed(5)}_${bounds[2].lon.toFixed(5)}_${bounds[1].lat.toFixed(5)}_${bounds[1].lon.toFixed(5)}_${bounds[0].lat.toFixed(5)}_${bounds[0].lon.toFixed(5)}_.webp`
-        } else if(req.body.type === 'kmz') {
-            buffer = await saveKMZ(
-                mapName,
-                {
-                    top_left: bounds[3],
-                    top_right: bounds[2],
-                    bottom_right: bounds[1],
-                    bottom_left: bounds[0]
-                },
-                outImgBlob
-            )
-            mime = 'application/vnd.google-earth.kmz'
-            filename = `${mapName}.kmz`
-        } else {
-            return res.status(400).send('invalid type' )
-        }
-        var readStream = new stream.PassThrough()
-        readStream.end(buffer)
-        res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
-        res.set('Content-Type', mime)
-        readStream.pipe(res)
-    /*} catch (e) {
-        return res.status(500).send('Something went wrong... '+e)
-    }*/
+    }
+    
+    let buffer
+    let mime
+    let filename
+    if (!req.body.type || req.body.type === 'webp') {
+        buffer = outImgBlob
+        mime = 'image/webp'
+        filename = `${mapName}_${bounds[3].lat.toFixed(5)}_${bounds[3].lon.toFixed(5)}_${bounds[2].lat.toFixed(5)}_${bounds[2].lon.toFixed(5)}_${bounds[1].lat.toFixed(5)}_${bounds[1].lon.toFixed(5)}_${bounds[0].lat.toFixed(5)}_${bounds[0].lon.toFixed(5)}_.webp`
+    } else if(req.body.type === 'kmz') {
+        buffer = await saveKMZ(
+            mapName,
+            {
+                top_left: bounds[3],
+                top_right: bounds[2],
+                bottom_right: bounds[1],
+                bottom_left: bounds[0]
+            },
+            outImgBlob
+        )
+        mime = 'application/vnd.google-earth.kmz'
+        filename = `${mapName}.kmz`
+    } else {
+        return res.status(400).send('invalid type')
+    }
+    var readStream = new stream.PassThrough()
+    readStream.end(buffer)
+    res.set('Content-Disposition', "attachment; filename*=UTF-8''" + encodeURIComponent(filename))
+    res.set('Content-Type', mime)
+    readStream.pipe(res)
 }
 
 const getRGClasses = async (req, res, next) => {
