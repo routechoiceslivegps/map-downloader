@@ -89,30 +89,7 @@ const getLiveloxMap = async (req, res, next) => {
         return res.status(400).send('no class id provided' )
     }
     relayLeg = url.parse(liveloxUrl, true).query?.relayLeg
-    let data = {}
-    try {
-        const res = await fetch("https://www.livelox.com/Data/ClassInfo", {
-            "headers": {
-                "accept": "application/json",
-                "content-type": "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-            },
-            "body": JSON.stringify({
-                "classIds":[classId],
-                "courseIds":null,
-                "relayLegs":!!relayLeg ? [relayLeg] : [],
-                "relayLegGroupIds":[],
-                "includeMap":true,
-                "includeCourses":true,
-                "skipStoreInCache":false
-            }),
-            "method": "POST"
-        });
-        data = await res.json()
-    } catch (e) {
-        return res.status(400).send('could not reach livelox server')
-    }
-    const eventData = data.general
+
     let blobData = null
     try {
         const res = await fetch("https://www.livelox.com/Data/ClassBlob", {
@@ -137,67 +114,48 @@ const getLiveloxMap = async (req, res, next) => {
         return res.status(400).send('could not reach blob url')
     }
 
-    let mapUrl, mapBound, mapResolution, route, mapName
+    let mapUrl, mapBound, mapName
     try {
-        mapData = blobData.map
+        let mapData = blobData.map
         mapUrl = mapData.url;
-        mapBound = mapData.boundingQuadrilateral.vertices
-        mapResolution = mapData.resolution
-        route = blobData.courses.map((c) => c.controls)
         mapName = mapData.name
+        mapBound = mapData.boundingQuadrilateral.vertices.map((p) => new LatLon(p.latitude, p.longitude))
     } catch (e) {
         return res.status(400).send('could not parse livelox data')
     }
-    if (relayLeg) {
-        const courseIds = []
-        const groups = eventData.class.relayLegGroups
-        groups.forEach((group) => {
-            if (group.relayLegs.includes(parseInt(relayLeg))) {
-                courseIds.push(...group.courses.map((c) => c.id))
-            }
-        })
-        route = blobData.courses.filter((course) => courseIds.includes(course.id)).map((c) => c.controls) 
+    if (!blankMap) {
+        // Offload the drawing of the course to python code on routechoices.com
+        mapUrl = `https://livelox.routechoices.com/${classId}`;
+        if (relayLeg) {
+            mapUrl += `-${relayLeg}`;
+        }
+        mapUrl += "/map";
     }
-    let mapScale = route[0]?.controls?.[0].mapScale || 15000;
-    mapResolution = 15000 / mapScale;
-
-    const bounds = mapBound.map((p) => new LatLon(p.latitude, p.longitude));
-
+    
     let outImgBlob;
-    if (blankMap) {
+    try {
         const image = await fetch(mapUrl);
         const imageBuffer = await image.buffer();
         outImgBlob = await sharp(imageBuffer).webp().toBuffer();
-    } else {
-        let generatedMapUrl = `https://livelox.routechoices.com/${classId}`;
-        if (relayLeg) {
-            generatedMapUrl += `-${relayLeg}`;
-        }
-        generatedMapUrl += "/map";
-        try {
-            const fimg = await fetch(generatedMapUrl);
-            const fimgb = await fimg.buffer();
-            outImgBlob = await sharp(fimgb).webp().toBuffer();
-        } catch (e) {
-            return res.status(500).send('failed to get map')
-        }
+    } catch (e) {
+        return res.status(500).send('failed to get map')
     }
     
-    let buffer
-    let mime
-    let filename
+    let buffer;
+    let mime;
+    let filename;
     if (!req.body.type || req.body.type === 'webp') {
         buffer = outImgBlob
         mime = 'image/webp'
-        filename = `${mapName}_${bounds[3].lat.toFixed(5)}_${bounds[3].lon.toFixed(5)}_${bounds[2].lat.toFixed(5)}_${bounds[2].lon.toFixed(5)}_${bounds[1].lat.toFixed(5)}_${bounds[1].lon.toFixed(5)}_${bounds[0].lat.toFixed(5)}_${bounds[0].lon.toFixed(5)}_.webp`
+        filename = `${mapName}_${mapBound[3].lat.toFixed(5)}_${mapBound[3].lon.toFixed(5)}_${mapBound[2].lat.toFixed(5)}_${mapBound[2].lon.toFixed(5)}_${mapBound[1].lat.toFixed(5)}_${mapBound[1].lon.toFixed(5)}_${mapBound[0].lat.toFixed(5)}_${mapBound[0].lon.toFixed(5)}_.webp`
     } else if(req.body.type === 'kmz') {
         buffer = await saveKMZ(
             mapName,
             {
-                top_left: bounds[3],
-                top_right: bounds[2],
-                bottom_right: bounds[1],
-                bottom_left: bounds[0]
+                top_left: mapBound[3],
+                top_right: mapBound[2],
+                bottom_right: mapBound[1],
+                bottom_left: mapBound[0]
             },
             outImgBlob
         )
