@@ -165,8 +165,8 @@ const getLiveloxMap = async (req, res, next) => {
 
     let outImgBlob;
     if (blankMap) {
-        const image = await fetch(image.src);
-        const imageBuffer = await fimg.buffer();
+        const image = await fetch(mapUrl);
+        const imageBuffer = await image.buffer();
         outImgBlob = await sharp(imageBuffer).webp().toBuffer();
     } else {
         let generatedMapUrl = `https://livelox.routechoices.com/${classId}`;
